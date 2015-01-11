@@ -1,7 +1,7 @@
-GetThat
+Cyclog
 =======
 
-GetThat is a service that allows you to monitor multiple logs (or any other files) in real-time.
+Cyclog is a service that allows you to monitor multiple logs (or any other files) in real-time.
 It is similar to Graphite, Cube etc. in a sense that you send various data to one server (or multiple load balanced servers) and access it via Web App.
 
 Automated deployment
@@ -19,11 +19,11 @@ If you don't have one, follow it's [installation instructions](http://www.virtua
 	
 * Create new virtual environment
 
-    	virtualenv getthat
-    	cd getthat
+    	virtualenv cyclog
+    	cd cyclog
     	$ source bin/activate
 
-* Unpack GetThat there and install needed requirements
+* Unpack Cyclog there and install needed requirements
 
         pip install -r requirements.txt
 	
@@ -32,7 +32,7 @@ Running the service
 
 Run it via:
 
-    python getthat.py --webhost=[webhost_ip:]webhost_port --feedhost=[feedhost_ip:]feedhost_port
+    python cyclog.py --webhost=[webhost_ip:]webhost_port --feedhost=[feedhost_ip:]feedhost_port
 
 if hosts or ports are not specified, the defaults will be used:
 * **0.0.0.0: 34580**  for HTTP web server
