@@ -29,6 +29,8 @@ import json
 from tornado import iostream, ioloop, tcpserver, web
 from sockjs.tornado import SockJSRouter, SockJSConnection
 
+import brukva
+import redis
 
 def create_logger(name, level=logging.DEBUG, to_file=True, to_console=False):
     """ Create and configure logger
@@ -66,6 +68,12 @@ def create_logger(name, level=logging.DEBUG, to_file=True, to_console=False):
 
 log = create_logger("cyclog", to_console=True)
 
+# create async redis client
+redis_client = brukva.Client()
+redis_client.connect()
+
+#create a sync client
+redis_sync_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 class WebAppConnection(SockJSConnection):
     """ Connection between web app and server
@@ -79,23 +87,31 @@ class WebAppConnection(SockJSConnection):
             ("remove", feedname)    feed `feedname` is not available anymore
             (feedname, data)        feed `feedname` was updated with `data`
     """
-    clients = set()     # active web app connections
-
     def __init__(self, session):
         super(WebAppConnection, self).__init__(session)
 
-        self.subscribed = set()     # set of feeds (feed names) this web app is subscribed to
+#        self.subscribed = set()     # set of feeds (feed names) this web app is subscribed to
         self.ip = None
+        self.client = brukva.Client()
+        self.client.connect()
+        self.client.subscribe('broadcast_channel')
 
     def on_open(self, request):
         """ Handles opened web app connection"""
         self.ip = request.ip
+        self.client.listen(self.on_pubsub_message)
         log.debug("Connected new webapp from %s" % self.ip)
-        self.clients.add(self)
 
         # push list of available feeds to web app
-        for feedname in FeedConnection.feeds:
+        #for feedname in FeedConnection.feeds:
+            #self.send(json.dumps(["add", feedname]))
+        for feedname in redis_sync_client.lrange('feedlist', 0, -1):
+            print("channel list name is: ", feedname)
             self.send(json.dumps(["add", feedname]))
+
+    def on_pubsub_message(self, message):
+        print("Inside pubsub message: ", message.body) 
+        self.send(message.body)
 
     def on_message(self, msg):
         """ Handles incoming message"""
@@ -106,11 +122,13 @@ class WebAppConnection(SockJSConnection):
             return
 
         if command == "subscribe":
-            FeedConnection.feeds[feedname].subscribe(self)
-            self.subscribed.add(feedname)
+            self.client.subscribe(feedname)
+            #FeedConnection.feeds[feedname].subscribe(self)
+            #self.subscribed.add(feedname)
         elif command == "unsubscribe":
-            FeedConnection.feeds[feedname].unsubscribe(self)
-            self.subscribed.remove(feedname)
+            self.client.unsubscribe(feedname)
+            #FeedConnection.feeds[feedname].unsubscribe(self)
+            #self.subscribed.remove(feedname)
         else:
             log.error("Unknown command %s from webapp %s" % (command, self.ip))
 
@@ -119,15 +137,20 @@ class WebAppConnection(SockJSConnection):
         log.debug("Disconnected webapp from %s" % self.ip)
 
         # un-subscribe from all feeds
-        for feedname in self.subscribed:
-            FeedConnection.feeds[feedname].unsubscribe(self)
+        #for feedname in self.subscribed:
+            #FeedConnection.feeds[feedname].unsubscribe(self)
 
-        self.clients.remove(self)
-
+        #self.clients.remove(self)
+        for feedname in redis_sync_client.lrange('feedlist', 0, -1):
+            try:
+                self.client.unsubscribe(feedname)
+            except Exception:
+                continue
+        self.client.disconnect()
 
 class FeedConnection(iostream.IOStream):
     """ Connection between feeder and server"""
-    feeds = {}  # active feeds
+    #feeds = {}  # active feeds
 
     def __init__(self, sock, address, close_callback=None, io_loop=None):
         """
@@ -148,15 +171,17 @@ class FeedConnection(iostream.IOStream):
             log.error("Can't parse address. Exception: %s" % e)
             return
 
-        self.feeds[self.id] = self
+        #self.feeds[self.id] = self
 
-        self.subscribers = set()    # web apps subscribed to this feed
+        #self.subscribers = set()    # web apps subscribed to this feed
 
         log.debug("Connected new feed %s" % self.id)
         self.read_until_close(self.handle_close, streaming_callback=self.handle_streaming)
 
         # broadcast "new feed is available" to all webapps
-        WebAppRouter.broadcast(WebAppConnection.clients, json.dumps(["add", self.id]))
+        #WebAppRouter.broadcast(WebAppConnection.clients, json.dumps(["add", self.id]))
+        redis_client.publish('broadcast_channel', json.dumps(["add", self.id]))
+        redis_sync_client.rpush('feedlist', self.id)
 
     def handle_close(self, data):
         """ Handles connection close
@@ -166,10 +191,11 @@ class FeedConnection(iostream.IOStream):
         log.debug("Closed feed %s" % self.id)
 
         # broadcast "feed is closed" to all webapps
-        WebAppRouter.broadcast(WebAppConnection.clients, json.dumps(["remove", self.id]))
+        #WebAppRouter.broadcast(WebAppConnection.clients, json.dumps(["remove", self.id]))
+        redis_client.publish('broadcast_channel', json.dumps(["remove", self.id]))
 
-        del self.feeds[self.id]
-
+        #del self.feeds[self.id]
+        redis_sync_client.lrem('feedlist', 1, self.id)
         if self.close_callback:
             self.close_callback(self)
 
@@ -178,19 +204,20 @@ class FeedConnection(iostream.IOStream):
         log.debug("-> Server    ; feed: %s : %s" % (self.id, repr(data[:60])))
 
         # forward received data to all subscribed web apps
-        for subscriber in self.subscribers:
-            try:
-                subscriber.send(json.dumps([self.id, data]))
-            except Exception as e:
-                log.error("Can't send update to webapp. Exception: %s" % e)
+        #for subscriber in self.subscribers:
+            #try:
+                #subscriber.send(json.dumps([self.id, data]))
+            #except Exception as e:
+                #log.error("Can't send update to webapp. Exception: %s" % e)
+        redis_client.publish(self.id, json.dumps([self.id, data]))
 
-    def subscribe(self, webapp_connection):
-        """ Subscribes web app to this feed updates"""
-        self.subscribers.add(webapp_connection)
+    #def subscribe(self, webapp_connection):
+        #""" Subscribes web app to this feed updates"""
+        #self.subscribers.add(webapp_connection)
 
-    def unsubscribe(self, webapp_connection):
-        """ Un-subscribes web app from this feed updates"""
-        self.subscribers.remove(webapp_connection)
+    #def unsubscribe(self, webapp_connection):
+        #""" Un-subscribes web app from this feed updates"""
+        #self.subscribers.remove(webapp_connection)
 
 
 class Receiver(tcpserver.TCPServer):
@@ -259,6 +286,8 @@ if __name__ == '__main__':
     # setup feed receiving TCP server
     receiver = Receiver()
     receiver.listen(feed_port, address=feed_host)
+
+    redis_sync_client.ltrim('feedlist', 10, 0)
 
     # setup web server
     WebAppRouter = SockJSRouter(WebAppConnection, '/sockjs')
