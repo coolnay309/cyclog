@@ -1,0 +1,121 @@
+html {
+    overflow: hidden;
+}
+
+body {
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+}
+
+#main {
+    position: absolute;
+    left: 17em;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    font-size: 1em;
+    z-index: 4;
+    overflow: hidden;
+    background-color: #35414f;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+}
+
+#sidebar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 17em;
+    font-size: 1em;
+    z-index: 4;
+    overflow: auto;
+    background: #35414f url(hot-sneaks/images/ui-bg_dots-small_35_35414f_2x2.png) 50% 50% repeat;
+    color: #ADD3FF;
+    border-bottom: solid 1px #808080;
+    border-top: solid 1px #808080;
+    font-weight: bold;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+#sidebar h1 {
+    font-size: 100%;
+    font-weight: bold;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+
+#tab-list {
+    height: 100%;
+}
+
+.tab-content {
+    position: absolute;
+    top: 50px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: auto;
+    overflow: auto;
+    color: #ADD3FF;
+    font-family: monospace;
+    font-size: small;
+    line-height: 1.1;
+}
+
+.subscribed {
+    background: #db4865 url(hot-sneaks/images/ui-bg_diagonals-small_40_db4865_40x40.png) 50% 50% repeat;
+    font-weight: bold;
+    color: #ffffff;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.available {
+    background: #93c3cd url(hot-sneaks/images/ui-bg_diagonals-small_50_93c3cd_40x40.png) 50% 50% repeat;
+    font-weight: bold;
+    color: #333333;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+#feeds-list .ui-selecting {
+    background: #93c3cd url(hot-sneaks/images/ui-bg_diagonals-small_50_93c3cd_40x40.png) 50% 50% repeat;
+    font-weight: bold;
+    color: #333333;
+}
+
+#feeds-list .ui-selected {
+    background: #db4865 url(hot-sneaks/images/ui-bg_diagonals-small_40_db4865_40x40.png) 50% 50% repeat;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+#feeds-list {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+#feeds-list li {
+    margin: 3px 3px 3px 0 ;
+    padding: 0.4em;
+    font-size: 1em;
+    height: 18px;
+    cursor: pointer;
+
+    /*border: 1px solid #93c3cd;*/
+    background: #93c3cd url(hot-sneaks/images/ui-bg_diagonals-small_50_93c3cd_40x40.png) 50% 50% repeat;
+    font-weight: bold;
+    color: #333333;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+/*fix for what looks like a bug in jQueryUI theme*/
+.ui-widget-content {
+    background: none;
+}
