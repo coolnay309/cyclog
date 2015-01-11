@@ -1,4 +1,8 @@
+backports.ssl-match-hostname==3.4.0.2
+brukva==0.0.1
+redis==2.10.3
 sockjs-tornado==1.0.0
 tornado==3.2
+
 
 # Automated deployment requires `fabric`. It depends on `pycrypto` that needs to be compiled, install it manually.
