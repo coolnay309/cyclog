@@ -1,7 +1,7 @@
-""" Back-end server for the GetThat app.
+""" Back-end server for the Cyclog app.
 
 Run it via:
-    python getthat.py --webhost=[webhost_ip:]webhost_port --feedhost=[feedhost_ip:]feedhost_port
+    python cyclog.py --webhost=[webhost_ip:]webhost_port --feedhost=[feedhost_ip:]feedhost_port
 
     if hosts or ports are not specified, the defaults will be used:
         0.0.0.0: 34580  for HTTP web server
@@ -35,7 +35,7 @@ def create_logger(name, level=logging.DEBUG, to_file=True, to_console=False):
 
     @param name:        logger name
     @param level:       logging level for files and console output
-    @param to_file:     True/False, write log output to "getthat.log" file or not
+    @param to_file:     True/False, write log output to "cyclog.log" file or not
     @param to_console:  True/False, print log output to stderr or not
     @return:            log object
     """
@@ -56,7 +56,7 @@ def create_logger(name, level=logging.DEBUG, to_file=True, to_console=False):
     # create file handler
     if to_file:
         # each log file is up to 10Mb
-        fh = logging.handlers.RotatingFileHandler("getthat.log", maxBytes=10*1024*1024)
+        fh = logging.handlers.RotatingFileHandler("cyclog.log", maxBytes=10*1024*1024)
         fh.setFormatter(formatter)
         fh.setLevel(level)
         _log.addHandler(fh)
@@ -64,7 +64,7 @@ def create_logger(name, level=logging.DEBUG, to_file=True, to_console=False):
     return _log
 
 
-log = create_logger("getthat", to_console=True)
+log = create_logger("cyclog", to_console=True)
 
 
 class WebAppConnection(SockJSConnection):
@@ -214,7 +214,7 @@ class MainHandler(web.RequestHandler):
 
 
 def print_help():
-    print "python getthat.py --webhost=[webhost_ip:]webhost_port --feedhost=[feedhost_ip:]feedhost_port"
+    print "python cyclog.py --webhost=[webhost_ip:]webhost_port --feedhost=[feedhost_ip:]feedhost_port"
 
 
 if __name__ == '__main__':

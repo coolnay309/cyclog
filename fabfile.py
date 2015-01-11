@@ -12,12 +12,12 @@ import getpass
 from fabric.api import cd, sudo, run, env, warn_only, settings, put
 from fabric.context_managers import prefix
 
-INSTALL_DIR = "/opt/getthat"
-MAIN_FILE = "getthat.py"
+INSTALL_DIR = "/opt/cyclog"
+MAIN_FILE = "cyclog.py"
 
 FILES = [
     "webapp",
-    "getthat.py",
+    "cyclog.py",
     "fabfile.py",
     "requirements.txt",
     "README.md",
