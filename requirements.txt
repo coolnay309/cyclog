@@ -1,8 +1,9 @@
 backports.ssl-match-hostname==3.4.0.2
-brukva==0.0.1
 redis==2.10.3
 sockjs-tornado==1.0.0
 tornado==3.2
 
+# Download brukva redis async client from https://github.com/evilkost/brukva. And install it python setup.py install
+# brukva will listed in pip list as brukva=0.0.1
 
 # Automated deployment requires `fabric`. It depends on `pycrypto` that needs to be compiled, install it manually.
