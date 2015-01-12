@@ -89,8 +89,6 @@ class WebAppConnection(SockJSConnection):
     """
     def __init__(self, session):
         super(WebAppConnection, self).__init__(session)
-
-#        self.subscribed = set()     # set of feeds (feed names) this web app is subscribed to
         self.ip = None
         self.client = brukva.Client()
         self.client.connect()
@@ -103,13 +101,12 @@ class WebAppConnection(SockJSConnection):
         log.debug("Connected new webapp from %s" % self.ip)
 
         # push list of available feeds to web app
-        #for feedname in FeedConnection.feeds:
-            #self.send(json.dumps(["add", feedname]))
         for feedname in redis_sync_client.lrange('feedlist', 0, -1):
             print("channel list name is: ", feedname)
             self.send(json.dumps(["add", feedname]))
 
     def on_pubsub_message(self, message):
+        """Callback for redis pusub updates"""
         print("Inside pubsub message: ", message.body) 
         self.send(message.body)
 
@@ -123,12 +120,8 @@ class WebAppConnection(SockJSConnection):
 
         if command == "subscribe":
             self.client.subscribe(feedname)
-            #FeedConnection.feeds[feedname].subscribe(self)
-            #self.subscribed.add(feedname)
         elif command == "unsubscribe":
             self.client.unsubscribe(feedname)
-            #FeedConnection.feeds[feedname].unsubscribe(self)
-            #self.subscribed.remove(feedname)
         else:
             log.error("Unknown command %s from webapp %s" % (command, self.ip))
 
@@ -136,11 +129,6 @@ class WebAppConnection(SockJSConnection):
         """ Handles closed web app connection"""
         log.debug("Disconnected webapp from %s" % self.ip)
 
-        # un-subscribe from all feeds
-        #for feedname in self.subscribed:
-            #FeedConnection.feeds[feedname].unsubscribe(self)
-
-        #self.clients.remove(self)
         for feedname in redis_sync_client.lrange('feedlist', 0, -1):
             try:
                 self.client.unsubscribe(feedname)
@@ -150,7 +138,6 @@ class WebAppConnection(SockJSConnection):
 
 class FeedConnection(iostream.IOStream):
     """ Connection between feeder and server"""
-    #feeds = {}  # active feeds
 
     def __init__(self, sock, address, close_callback=None, io_loop=None):
         """
@@ -171,16 +158,12 @@ class FeedConnection(iostream.IOStream):
             log.error("Can't parse address. Exception: %s" % e)
             return
 
-        #self.feeds[self.id] = self
-
-        #self.subscribers = set()    # web apps subscribed to this feed
-
         log.debug("Connected new feed %s" % self.id)
         self.read_until_close(self.handle_close, streaming_callback=self.handle_streaming)
 
         # broadcast "new feed is available" to all webapps
-        #WebAppRouter.broadcast(WebAppConnection.clients, json.dumps(["add", self.id]))
         redis_client.publish('broadcast_channel', json.dumps(["add", self.id]))
+        # add to redis list of feeds
         redis_sync_client.rpush('feedlist', self.id)
 
     def handle_close(self, data):
@@ -191,10 +174,8 @@ class FeedConnection(iostream.IOStream):
         log.debug("Closed feed %s" % self.id)
 
         # broadcast "feed is closed" to all webapps
-        #WebAppRouter.broadcast(WebAppConnection.clients, json.dumps(["remove", self.id]))
         redis_client.publish('broadcast_channel', json.dumps(["remove", self.id]))
 
-        #del self.feeds[self.id]
         redis_sync_client.lrem('feedlist', 1, self.id)
         if self.close_callback:
             self.close_callback(self)
@@ -203,22 +184,8 @@ class FeedConnection(iostream.IOStream):
         """ Handles incoming chunk of data"""
         log.debug("-> Server    ; feed: %s : %s" % (self.id, repr(data[:60])))
 
-        # forward received data to all subscribed web apps
-        #for subscriber in self.subscribers:
-            #try:
-                #subscriber.send(json.dumps([self.id, data]))
-            #except Exception as e:
-                #log.error("Can't send update to webapp. Exception: %s" % e)
+        # forward received data to all subscribed web apps via redis pubsub
         redis_client.publish(self.id, json.dumps([self.id, data]))
-
-    #def subscribe(self, webapp_connection):
-        #""" Subscribes web app to this feed updates"""
-        #self.subscribers.add(webapp_connection)
-
-    #def unsubscribe(self, webapp_connection):
-        #""" Un-subscribes web app from this feed updates"""
-        #self.subscribers.remove(webapp_connection)
-
 
 class Receiver(tcpserver.TCPServer):
     """ TCP server receiving incoming feeds"""
