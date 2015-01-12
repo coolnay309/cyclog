@@ -4,6 +4,8 @@ Cyclog
 Cyclog is a service that allows you to monitor multiple logs (or any other files) in real-time.
 It is similar to Graphite, Cube etc. in a sense that you send various data to one server (or multiple load balanced servers) and access it via Web App.
 
+It uses Tornado server, SockJS and Redis PubSub and cache.
+
 Automated deployment
 --------------------
 
@@ -55,7 +57,7 @@ Feeds are named by feeder's outgoing host:port.
 Using Web App
 -------------
 		 
-Updates from a feed are pushed to web apps that had subscribed to the feed. To subscribe to available feeds use web app
+Updates from a feed are pushed to web apps via Redis PubSub server. To subscribe to available feeds use web app
 	http://127.0.0.1:34580/   or whatever host/port you specified
 
 On the left you see the list of available feeds, named by the feeder's outgoing host:port. Blue are the available feeds. Click a feed to subscribe to it (Ctrl-click to subscribe to multiple feeds). Subscribed feeds are Red and have a tab on the right where updates are posted.
